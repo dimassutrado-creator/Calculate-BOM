@@ -152,9 +152,15 @@ main{ flex:1; min-height:0; position:relative; }
   font-size:12.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   border-right:1px solid var(--line-soft);
 }
-.vcell.vhead{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); font-weight:600; height:32px; }
+.vcell.vhead{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); font-weight:600; height:32px; position:relative; }
 .vcell.vhead.sortable{ cursor:pointer; justify-content:space-between; gap:6px; user-select:none; }
 .vcell.vhead.sortable:hover{ color:var(--text-dim); background:rgba(255,255,255,.02); }
+.col-resize-handle{
+  position:absolute; top:0; right:0; width:8px; height:100%; cursor:col-resize; z-index:5;
+}
+.col-resize-handle:hover, body.col-resizing .col-resize-handle{ background:rgba(255,140,66,.35); }
+body.col-resizing{ cursor:col-resize; user-select:none; }
+body.col-resizing *{ user-select:none; }
 .vhead-label{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
 .sort-arrow{ flex-shrink:0; width:9px; text-align:center; font-size:9px; color:var(--text-faint); opacity:.4; }
 .sort-arrow.active{ color:var(--cu); opacity:1; }
@@ -163,6 +169,21 @@ main{ flex:1; min-height:0; position:relative; }
 .vcell.computed{ color:var(--text-dim); background:rgba(255,255,255,.015); }
 .vcell.editable{ cursor:text; position:relative; }
 .vcell.editable:hover{ background:rgba(255,255,255,.035); }
+.vcell.expandable-cell{ position:relative; overflow:visible; gap:4px; }
+.cell-text{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.expand-btn{
+  flex-shrink:0; width:15px; height:15px; padding:0; display:inline-flex; align-items:center; justify-content:center;
+  border:none; border-radius:4px; background:transparent; color:var(--text-faint); cursor:pointer; font-size:9px; line-height:1;
+  transition:transform .15s ease, color .15s ease, background .15s ease;
+}
+.expand-btn:hover{ color:var(--cu); background:rgba(255,255,255,.08); }
+.expand-btn.open{ color:var(--cu); transform:rotate(180deg); }
+.expand-popover{
+  position:absolute; top:calc(100% + 2px); left:0; z-index:40; min-width:100%; width:max-content; max-width:420px;
+  background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+  font-size:12.2px; line-height:1.45; color:var(--text); white-space:normal; word-break:break-word;
+  box-shadow:0 12px 28px rgba(0,0,0,.5);
+}
 .vcell.editable.qty-highlight{ background: rgba(212, 118, 60, 0.08); font-weight: 600; color: #f2a679; }
 .vcell.editable.qty-highlight:hover{ background: rgba(212, 118, 60, 0.16); }
 .vcell input{
@@ -389,11 +410,11 @@ var SCHEMA = {
     cols: [
       {key:0, label:'Source Product Category', width:150, editable:true},
       {key:1, label:'Source Product Code', width:130, editable:true},
-      {key:2, label:'Source Product Name', width:300, editable:true},
+      {key:2, label:'Source Product Name', width:300, editable:true, expandable:true},
       {key:3, label:'Source Product Qty', width:100, editable:true, num:true},
       {key:4, label:'Source Product UoM', width:90, editable:true},
       {key:5, label:'Component Code', width:120, editable:true},
-      {key:6, label:'Component Name', width:230, editable:true},
+      {key:6, label:'Component Name', width:230, editable:true, expandable:true},
       {key:7, label:'Component UOM', width:100, editable:true},
       {key:8, label:'Calculated Qty', width:110, editable:true, num:true},
       {key:9, label:'is conductor', width:100, editable:false, badge:true},
@@ -406,7 +427,7 @@ var SCHEMA = {
     headers: ['Component Code','Component Name','Component UOM','price cathode','price a+'],
     cols: [
       {key:0, label:'Component Code', width:140, editable:true},
-      {key:1, label:'Component Name', width:320, editable:true},
+      {key:1, label:'Component Name', width:320, editable:true, expandable:true},
       {key:2, label:'Component UOM', width:110, editable:true},
       {key:3, label:'price cathode', width:140, editable:true, num:true},
       {key:4, label:'price a+', width:140, editable:true, num:true}
@@ -417,7 +438,7 @@ var SCHEMA = {
     headers: ['Internal Reference','Name','Unit of Measure','Kategori'],
     cols: [
       {key:0, label:'Internal Reference', width:150, editable:true},
-      {key:1, label:'Name', width:300, editable:true},
+      {key:1, label:'Name', width:300, editable:true, expandable:true},
       {key:2, label:'Unit of Measure', width:130, editable:true},
       {key:3, label:'Kategori', width:120, editable:true, badge:true}
     ],
@@ -428,7 +449,7 @@ var SCHEMA = {
     cols: [
       {key:0, label:'Category', width:140, editable:false},
       {key:1, label:'Product Code', width:130, editable:false},
-      {key:2, label:'Product Name', width:320, editable:false},
+      {key:2, label:'Product Name', width:320, editable:false, expandable:true},
       {key:3, label:'Qty', width:80, editable:true, num:true, highlight:true}, /* EDITABLE QTY IN SUMMARY */
       {key:4, label:'UoM', width:80, editable:false},
       {key:5, label:'is conductor', width:100, editable:false, badge:true},
@@ -520,6 +541,7 @@ function loadFromStorage(onDone) {
 var VIEW = { bom: null, price: null, conductor: null, summary: null };
 var SORT = { bom: null, price: null, conductor: null, summary: null }; /* {col, dir} */
 var DISPLAY = { bom: null, price: null, conductor: null, summary: null }; /* cached filtered+sorted indices, null = identity */
+var COLW = { bom: {}, price: {}, conductor: {}, summary: {} }; /* user-resized column widths, keyed by col.key; empty = use schema default */
 var SELECTION = { bom: new Set(), price: new Set(), conductor: new Set() };
 var GRIDS = {};
 var lastCalcAt = null;
@@ -904,10 +926,11 @@ VirtualGrid.prototype._build = function () {
     this.headerInner.appendChild(hc);
   }
   this._headerArrows = {};
+  this._headerCells = {};
   this.schema.cols.forEach(function (col) {
     var c = document.createElement('div');
     c.className = 'vcell vhead sortable';
-    c.style.width = col.width + 'px';
+    c.style.width = self._colWidth(col) + 'px';
     var label = document.createElement('span');
     label.className = 'vhead-label';
     label.textContent = col.label;
@@ -915,9 +938,20 @@ VirtualGrid.prototype._build = function () {
     arrow.className = 'sort-arrow';
     c.appendChild(label);
     c.appendChild(arrow);
+    var handle = document.createElement('div');
+    handle.className = 'col-resize-handle';
+    handle.title = 'Seret untuk mengubah lebar kolom';
+    handle.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      self._startColResize(col, e.clientX);
+    });
+    handle.addEventListener('click', function (e) { e.stopPropagation(); });
+    c.appendChild(handle);
     c.addEventListener('click', function () { self._toggleSort(col.key); });
     self.headerInner.appendChild(c);
     self._headerArrows[col.key] = arrow;
+    self._headerCells[col.key] = c;
   });
   this.viewport = document.createElement('div');
   this.viewport.className = 'vgrid-viewport';
@@ -941,9 +975,49 @@ VirtualGrid.prototype._build = function () {
   });
   this._ro.observe(this.viewport);
 
-  var totalWidth = (selectable ? 36 : 0) + this.schema.cols.reduce(function (s, c) { return s + c.width; }, 0);
-  this.sizer.style.width = totalWidth + 'px';
-  this.rowsLayer.style.width = totalWidth + 'px';
+  this._recalcTotalWidth();
+};
+
+VirtualGrid.prototype._colWidth = function (col) {
+  var w = COLW[this.sheet] && COLW[this.sheet][col.key];
+  return (typeof w === 'number' && w > 0) ? w : col.width;
+};
+
+VirtualGrid.prototype._recalcTotalWidth = function () {
+  var self = this;
+  var total = (sheet_selectable(this.sheet) ? 36 : 0);
+  this.schema.cols.forEach(function (col) { total += self._colWidth(col); });
+  this.sizer.style.width = total + 'px';
+  this.rowsLayer.style.width = total + 'px';
+};
+
+VirtualGrid.prototype._startColResize = function (col, startX) {
+  var self = this;
+  var startWidth = this._colWidth(col);
+  var minWidth = 60;
+  var latestWidth = startWidth;
+  var rafId = null;
+  function apply(w) {
+    COLW[self.sheet][col.key] = w;
+    var headerCell = self._headerCells[col.key];
+    if (headerCell) headerCell.style.width = w + 'px';
+    self._recalcTotalWidth();
+    self.refresh();
+  }
+  function onMove(e) {
+    var delta = e.clientX - startX;
+    latestWidth = Math.max(minWidth, Math.round(startWidth + delta));
+    if (rafId) return;
+    rafId = requestAnimationFrame(function () { rafId = null; apply(latestWidth); });
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.body.classList.remove('col-resizing');
+  }
+  document.body.classList.add('col-resizing');
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
 };
 
 VirtualGrid.prototype._toggleSort = function (colKey) {
@@ -973,6 +1047,55 @@ VirtualGrid.prototype._updateSortIndicators = function () {
 };
 
 function sheet_selectable(sheet) { return sheet === 'bom' || sheet === 'price' || sheet === 'conductor'; }
+
+/* ---------- expandable long-text cell popover ----------
+   Clicking the small chevron next to a truncated cell reveals the full text
+   wrapped in a small panel directly below the cell (without widening the
+   column or resizing the row). Clicking it again — or scrolling, sorting,
+   searching, editing, or clicking elsewhere — collapses it back. */
+/* ---------- expandable long-text cell popover ----------
+   Clicking the small chevron next to a truncated cell reveals the full text
+   wrapped in a small panel directly below the cell (without widening the
+   column or resizing the row). Multiple rows/cells can be expanded at the
+   same time. Clicking a chevron again — or scrolling, sorting, searching,
+   editing, or clicking elsewhere — collapses it back. */
+var EXPAND_STATE = { keys: new Set() };
+
+function toggleExpandPopover(key, cell, text) {
+  if (EXPAND_STATE.keys.has(key)) { closeExpandPopoverForCell(cell, key); return; }
+  EXPAND_STATE.keys.add(key);
+  cell.classList.add('expanded');
+  var pop = document.createElement('div');
+  pop.className = 'expand-popover';
+  pop.textContent = text;
+  cell.appendChild(pop);
+  var btn = cell.querySelector('.expand-btn');
+  if (btn) btn.classList.add('open');
+}
+
+function closeExpandPopoverForCell(cell, key) {
+  EXPAND_STATE.keys.delete(key);
+  cell.classList.remove('expanded');
+  var pop = cell.querySelector('.expand-popover');
+  if (pop) pop.remove();
+  var btn = cell.querySelector('.expand-btn');
+  if (btn) btn.classList.remove('open');
+}
+
+function closeAllExpandPopovers() {
+  document.querySelectorAll('.expand-popover').forEach(function (p) { p.remove(); });
+  document.querySelectorAll('.expandable-cell.expanded').forEach(function (c) { c.classList.remove('expanded'); });
+  document.querySelectorAll('.expand-btn.open').forEach(function (b) { b.classList.remove('open'); });
+  EXPAND_STATE.keys.clear();
+}
+
+function hideExpandPopover() { closeAllExpandPopovers(); }
+
+document.addEventListener('click', function (e) {
+  if (EXPAND_STATE.keys.size === 0) return;
+  if (e.target.closest && (e.target.closest('.expand-popover') || e.target.closest('.expand-btn'))) return;
+  hideExpandPopover();
+});
 
 VirtualGrid.prototype.getCount = function () {
   var d = DISPLAY[this.sheet];
@@ -1011,6 +1134,7 @@ VirtualGrid.prototype.refresh = function () {
     frag.appendChild(this._renderRow(entry.row, entry.idx, sel));
   }
   this.rowsLayer.innerHTML = '';
+  hideExpandPopover();
   this.rowsLayer.appendChild(frag);
   if (this.headerCheckbox) {
     this.headerCheckbox.checked = total > 0 && !!sel && sel.size >= total;
@@ -1042,12 +1166,31 @@ VirtualGrid.prototype._renderRow = function (row, dataIdx, sel) {
   this.schema.cols.forEach(function (col, colIdx) {
     var cell = document.createElement('div');
     cell.className = 'vcell' + (col.num ? ' num' : '') + (col.computed ? ' computed' : '') + (col.editable ? ' editable' : '') + (col.highlight ? ' qty-highlight' : '');
-    cell.style.width = col.width + 'px';
+    cell.style.width = self._colWidth(col) + 'px';
     var val = row[col.key];
     if (col.badge) {
       cell.innerHTML = badgeHtml(val);
     } else if (col.num) {
       cell.textContent = (self.sheet === 'bom' && (col.key === 10 || col.key === 11)) || (self.sheet === 'summary' && col.key === 9) ? fmtMoney(val) : fmtNum(val);
+    } else if (col.expandable) {
+      cell.classList.add('expandable-cell');
+      var text = val === undefined || val === null ? '' : String(val);
+      var textSpan = document.createElement('span');
+      textSpan.className = 'cell-text';
+      textSpan.textContent = text;
+      cell.appendChild(textSpan);
+      if (text) {
+        var expandBtn = document.createElement('button');
+        expandBtn.type = 'button';
+        expandBtn.className = 'expand-btn';
+        expandBtn.textContent = '\u2304';
+        expandBtn.title = 'Lihat teks lengkap';
+        expandBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          toggleExpandPopover(self.sheet + ':' + dataIdx + ':' + col.key, cell, text);
+        });
+        cell.appendChild(expandBtn);
+      }
     } else {
       cell.textContent = val === undefined || val === null ? '' : val;
     }
@@ -1062,6 +1205,7 @@ VirtualGrid.prototype._renderRow = function (row, dataIdx, sel) {
 VirtualGrid.prototype._startEdit = function (cell, row, dataIdx, col) {
   var self = this;
   if (this.editingCell) return;
+  hideExpandPopover();
   this.editingCell = cell;
   var raw = row[col.key];
   var input = document.createElement('input');
@@ -1183,17 +1327,26 @@ function resetSheetView(sheet, alsoResetQty) {
   VIEW[sheet] = null;
   SORT[sheet] = null;
   setSearchSpinner(sheet, false);
-  if (GRIDS[sheet] && GRIDS[sheet]._updateSortIndicators) GRIDS[sheet]._updateSortIndicators();
+  var grid = GRIDS[sheet];
+  if (grid && grid._updateSortIndicators) grid._updateSortIndicators();
+  COLW[sheet] = {};
+  if (grid) {
+    grid.schema.cols.forEach(function (col) {
+      var hc = grid._headerCells && grid._headerCells[col.key];
+      if (hc) hc.style.width = col.width + 'px';
+    });
+    grid._recalcTotalWidth();
+  }
 
   if (alsoResetQty && sheet === 'summary') {
-    showProgress('Mereset pencarian & Qty Summary…');
+    showProgress('Mereset pencarian, lebar kolom & Qty Summary…');
     DB.summary = [];
     buildSummaryChunked(function () {
       hideProgress();
       refreshGrid('summary');
       updateFooter('summary');
       updateCounts();
-      toast('Pencarian & Qty Summary direset ke nilai awal.', 'ok');
+      toast('Pencarian, lebar kolom & Qty Summary direset ke nilai awal.', 'ok');
     });
     return;
   }
@@ -1201,7 +1354,7 @@ function resetSheetView(sheet, alsoResetQty) {
   rebuildDisplay(sheet);
   refreshGrid(sheet);
   updateFooter(sheet);
-  toast('Pencarian direset.');
+  toast('Pencarian & lebar kolom direset.');
 }
 
 document.getElementById('fileInput').addEventListener('change', function (e) {
