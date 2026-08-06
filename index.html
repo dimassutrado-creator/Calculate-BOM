@@ -148,7 +148,7 @@ main{ flex:1; min-height:0; position:relative; }
 .vrow:hover{ background:rgba(255,255,255,.02); }
 .vrow.selected{ background: var(--cu-soft); }
 .vcell{
-  padding:0 10px; display:flex; align-items:center; flex-shrink:0;
+  padding:0 10px; display:flex; align-items:center; flex-shrink:0; position:relative;
   font-size:12.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   border-right:1px solid var(--line-soft);
 }
@@ -184,6 +184,37 @@ body.col-resizing *{ user-select:none; }
   font-size:12.2px; line-height:1.45; color:var(--text); white-space:normal; word-break:break-word;
   box-shadow:0 12px 28px rgba(0,0,0,.5);
 }
+
+/* ---------- copy-cell button ---------- */
+.copy-btn{
+  position:absolute; top:50%; right:4px; transform:translateY(-50%);
+  width:18px; height:18px; padding:0; display:none; align-items:center; justify-content:center;
+  border:none; border-radius:5px; background:var(--panel); color:var(--text-faint); cursor:pointer;
+  box-shadow:0 0 0 1px var(--line); z-index:3;
+}
+.vcell:hover .copy-btn{ display:inline-flex; }
+.copy-btn:hover{ color:var(--cu); background:var(--panel-2); }
+.copy-btn svg{ width:10px; height:10px; }
+.copy-btn.copied{ color:var(--good); }
+.expandable-cell .copy-btn{ right:23px; }
+.vcheck .copy-btn{ display:none !important; }
+
+/* ---------- columns visibility menu ---------- */
+.col-menu{
+  position:fixed; z-index:200; width:230px; max-height:360px; overflow:hidden;
+  display:flex; flex-direction:column;
+  background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
+  padding:10px; box-shadow:0 16px 40px rgba(0,0,0,.5);
+}
+.col-menu-title{ font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); font-weight:600; margin-bottom:8px; flex-shrink:0; }
+.col-menu-list{ display:flex; flex-direction:column; gap:2px; overflow:auto; min-height:0; }
+.col-menu-item{ display:flex; align-items:center; gap:8px; padding:5px 6px; border-radius:6px; font-size:12.2px; cursor:pointer; }
+.col-menu-item:hover{ background:rgba(255,255,255,.04); }
+.col-menu-item input{ flex-shrink:0; }
+.col-menu-item span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.col-menu-actions{ border-top:1px solid var(--line-soft); margin-top:8px; padding-top:8px; flex-shrink:0; }
+.col-menu-link{ background:none; border:none; color:var(--cu); font-size:11.5px; cursor:pointer; padding:0; }
+.col-menu-link:hover{ text-decoration:underline; }
 .vcell.editable.qty-highlight{ background: rgba(212, 118, 60, 0.08); font-weight: 600; color: #f2a679; }
 .vcell.editable.qty-highlight:hover{ background: rgba(212, 118, 60, 0.16); }
 .vcell input{
@@ -287,6 +318,7 @@ body.col-resizing *{ user-select:none; }
         </div>
         <span class="result-count" id="resultBom"></span>
         <button class="btn subtle" data-action="reset-search" data-target="bom" title="Reset pencarian">Reset</button>
+        <button class="btn subtle" data-action="toggle-columns" data-target="bom" title="Tampilkan/sembunyikan kolom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="18" rx="1.5"/></svg>Kolom</button>
         <button class="btn subtle" data-action="export-sheet" data-target="bom">Export Sheet</button>
       </div>
       <div class="dirty-banner" id="dirtyBom">
@@ -314,6 +346,7 @@ body.col-resizing *{ user-select:none; }
         </div>
         <span class="result-count" id="resultPrice"></span>
         <button class="btn subtle" data-action="reset-search" data-target="price" title="Reset pencarian">Reset</button>
+        <button class="btn subtle" data-action="toggle-columns" data-target="price" title="Tampilkan/sembunyikan kolom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="18" rx="1.5"/></svg>Kolom</button>
         <button class="btn subtle" data-action="export-sheet" data-target="price">Export Sheet</button>
       </div>
       <div class="dirty-banner" id="dirtyPrice">
@@ -341,6 +374,7 @@ body.col-resizing *{ user-select:none; }
         </div>
         <span class="result-count" id="resultConductor"></span>
         <button class="btn subtle" data-action="reset-search" data-target="conductor" title="Reset pencarian">Reset</button>
+        <button class="btn subtle" data-action="toggle-columns" data-target="conductor" title="Tampilkan/sembunyikan kolom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="18" rx="1.5"/></svg>Kolom</button>
         <button class="btn subtle" data-action="export-sheet" data-target="conductor">Export Sheet</button>
       </div>
       <div class="dirty-banner" id="dirtyConductor">
@@ -362,6 +396,7 @@ body.col-resizing *{ user-select:none; }
         </div>
         <span class="result-count" id="resultSummary"></span>
         <button class="btn subtle" data-action="reset-search" data-target="summary" title="Reset pencarian & Qty">Reset</button>
+        <button class="btn subtle" data-action="toggle-columns" data-target="summary" title="Tampilkan/sembunyikan kolom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="18" rx="1.5"/></svg>Kolom</button>
         <button class="btn subtle" data-action="export-sheet" data-target="summary">Export Sheet</button>
       </div>
       <div class="dirty-banner" id="dirtySummary">
@@ -542,6 +577,7 @@ var VIEW = { bom: null, price: null, conductor: null, summary: null };
 var SORT = { bom: null, price: null, conductor: null, summary: null }; /* {col, dir} */
 var DISPLAY = { bom: null, price: null, conductor: null, summary: null }; /* cached filtered+sorted indices, null = identity */
 var COLW = { bom: {}, price: {}, conductor: {}, summary: {} }; /* user-resized column widths, keyed by col.key; empty = use schema default */
+var HIDDEN_COLS = { bom: {}, price: {}, conductor: {}, summary: {} }; /* hidden columns, keyed by col.key -> true when hidden */
 var SELECTION = { bom: new Set(), price: new Set(), conductor: new Set() };
 var GRIDS = {};
 var lastCalcAt = null;
@@ -900,8 +936,21 @@ function VirtualGrid(container, sheet) {
   this.editingCell = null;
   this._build();
 }
+VirtualGrid.prototype._visibleCols = function () {
+  var hidden = HIDDEN_COLS[this.sheet] || {};
+  return this.schema.cols.filter(function (col) { return !hidden[col.key]; });
+};
+
+VirtualGrid.prototype.setColumnHidden = function (colKey, hidden) {
+  HIDDEN_COLS[this.sheet][colKey] = hidden;
+  this._build();
+  this._updateSortIndicators();
+  this.refresh();
+};
+
 VirtualGrid.prototype._build = function () {
   var self = this;
+  if (this._ro) { this._ro.disconnect(); }
   this.container.innerHTML = '';
   var selectable = sheet_selectable(this.sheet);
   this.header = document.createElement('div');
@@ -927,7 +976,7 @@ VirtualGrid.prototype._build = function () {
   }
   this._headerArrows = {};
   this._headerCells = {};
-  this.schema.cols.forEach(function (col) {
+  this._visibleCols().forEach(function (col) {
     var c = document.createElement('div');
     c.className = 'vcell vhead sortable';
     c.style.width = self._colWidth(col) + 'px';
@@ -986,7 +1035,7 @@ VirtualGrid.prototype._colWidth = function (col) {
 VirtualGrid.prototype._recalcTotalWidth = function () {
   var self = this;
   var total = (sheet_selectable(this.sheet) ? 36 : 0);
-  this.schema.cols.forEach(function (col) { total += self._colWidth(col); });
+  this._visibleCols().forEach(function (col) { total += self._colWidth(col); });
   this.sizer.style.width = total + 'px';
   this.rowsLayer.style.width = total + 'px';
 };
@@ -1097,6 +1146,63 @@ document.addEventListener('click', function (e) {
   hideExpandPopover();
 });
 
+/* ---------- copy-to-clipboard per cell ---------- */
+var COPY_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
+var CHECK_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>';
+
+function makeCopyButton(text) {
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'copy-btn';
+  btn.title = 'Salin nilai';
+  btn.innerHTML = COPY_ICON_SVG;
+  btn.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    e.preventDefault();
+    copyCellText(text, btn);
+  });
+  return btn;
+}
+
+function copyCellText(text, btn) {
+  function finish(ok) {
+    if (!btn) return;
+    if (ok) {
+      btn.innerHTML = CHECK_ICON_SVG;
+      btn.classList.add('copied');
+      setTimeout(function () {
+        btn.innerHTML = COPY_ICON_SVG;
+        btn.classList.remove('copied');
+      }, 1000);
+    } else {
+      toast('Gagal menyalin ke clipboard', 'err');
+    }
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { finish(true); }).catch(function () { fallbackCopy(text, finish); });
+  } else {
+    fallbackCopy(text, finish);
+  }
+}
+
+function fallbackCopy(text, cb) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    cb(ok);
+  } catch (e) {
+    cb(false);
+  }
+}
+
 VirtualGrid.prototype.getCount = function () {
   var d = DISPLAY[this.sheet];
   return d ? d.length : DB[this.sheet].length;
@@ -1163,18 +1269,23 @@ VirtualGrid.prototype._renderRow = function (row, dataIdx, sel) {
     r.appendChild(cc);
   }
 
-  this.schema.cols.forEach(function (col, colIdx) {
+  this._visibleCols().forEach(function (col, colIdx) {
     var cell = document.createElement('div');
     cell.className = 'vcell' + (col.num ? ' num' : '') + (col.computed ? ' computed' : '') + (col.editable ? ' editable' : '') + (col.highlight ? ' qty-highlight' : '');
     cell.style.width = self._colWidth(col) + 'px';
     var val = row[col.key];
+    var copyText = '';
     if (col.badge) {
       cell.innerHTML = badgeHtml(val);
+      copyText = val === undefined || val === null ? '' : String(val);
     } else if (col.num) {
-      cell.textContent = (self.sheet === 'bom' && (col.key === 10 || col.key === 11)) || (self.sheet === 'summary' && col.key === 9) ? fmtMoney(val) : fmtNum(val);
+      var numText = (self.sheet === 'bom' && (col.key === 10 || col.key === 11)) || (self.sheet === 'summary' && col.key === 9) ? fmtMoney(val) : fmtNum(val);
+      cell.textContent = numText;
+      copyText = numText;
     } else if (col.expandable) {
       cell.classList.add('expandable-cell');
       var text = val === undefined || val === null ? '' : String(val);
+      copyText = text;
       var textSpan = document.createElement('span');
       textSpan.className = 'cell-text';
       textSpan.textContent = text;
@@ -1192,7 +1303,12 @@ VirtualGrid.prototype._renderRow = function (row, dataIdx, sel) {
         cell.appendChild(expandBtn);
       }
     } else {
-      cell.textContent = val === undefined || val === null ? '' : val;
+      var plainText = val === undefined || val === null ? '' : String(val);
+      cell.textContent = plainText;
+      copyText = plainText;
+    }
+    if (copyText) {
+      cell.appendChild(makeCopyButton(copyText));
     }
     if (col.editable) {
       cell.addEventListener('click', function () { self._startEdit(cell, row, dataIdx, col); });
@@ -1318,7 +1434,90 @@ document.body.addEventListener('click', function (e) {
     triggerRecalc('manual');
   } else if (action === 'reset-search') {
     resetSheetView(target, target === 'summary');
+  } else if (action === 'toggle-columns') {
+    openColumnsMenu(target, btn);
   }
+});
+
+/* ---------- column visibility menu ---------- */
+var COLMENU_STATE = { el: null, sheet: null };
+
+function closeColumnsMenu() {
+  if (COLMENU_STATE.el) { COLMENU_STATE.el.remove(); }
+  COLMENU_STATE.el = null;
+  COLMENU_STATE.sheet = null;
+}
+
+function openColumnsMenu(sheet, anchorBtn) {
+  if (COLMENU_STATE.sheet === sheet) { closeColumnsMenu(); return; }
+  closeColumnsMenu();
+  var schema = SCHEMA[sheet];
+  var hidden = HIDDEN_COLS[sheet];
+  var menu = document.createElement('div');
+  menu.className = 'col-menu';
+
+  var title = document.createElement('div');
+  title.className = 'col-menu-title';
+  title.textContent = 'Tampilkan Kolom';
+  menu.appendChild(title);
+
+  var list = document.createElement('div');
+  list.className = 'col-menu-list';
+  schema.cols.forEach(function (col) {
+    var item = document.createElement('label');
+    item.className = 'col-menu-item';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = !hidden[col.key];
+    cb.addEventListener('change', function () {
+      GRIDS[sheet].setColumnHidden(col.key, !cb.checked);
+    });
+    var span = document.createElement('span');
+    span.textContent = col.label;
+    item.appendChild(cb);
+    item.appendChild(span);
+    list.appendChild(item);
+  });
+  menu.appendChild(list);
+
+  var actions = document.createElement('div');
+  actions.className = 'col-menu-actions';
+  var showAllBtn = document.createElement('button');
+  showAllBtn.type = 'button';
+  showAllBtn.className = 'col-menu-link';
+  showAllBtn.textContent = 'Tampilkan semua kolom';
+  showAllBtn.addEventListener('click', function () {
+    HIDDEN_COLS[sheet] = {};
+    GRIDS[sheet]._build();
+    GRIDS[sheet]._updateSortIndicators();
+    GRIDS[sheet].refresh();
+    closeColumnsMenu();
+  });
+  actions.appendChild(showAllBtn);
+  menu.appendChild(actions);
+
+  document.body.appendChild(menu);
+  var r = anchorBtn.getBoundingClientRect();
+  var top = r.bottom + 6;
+  var left = Math.min(r.left, window.innerWidth - 246);
+  menu.style.top = Math.max(6, top) + 'px';
+  menu.style.left = Math.max(6, left) + 'px';
+  var menuRect = menu.getBoundingClientRect();
+  if (menuRect.bottom > window.innerHeight - 6) {
+    menu.style.top = Math.max(6, window.innerHeight - menuRect.height - 6) + 'px';
+  }
+
+  COLMENU_STATE.el = menu;
+  COLMENU_STATE.sheet = sheet;
+}
+
+document.addEventListener('click', function (e) {
+  if (!COLMENU_STATE.el) return;
+  if (e.target.closest && (e.target.closest('.col-menu') || e.target.closest('[data-action="toggle-columns"]'))) return;
+  closeColumnsMenu();
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && COLMENU_STATE.el) closeColumnsMenu();
 });
 
 function resetSheetView(sheet, alsoResetQty) {
